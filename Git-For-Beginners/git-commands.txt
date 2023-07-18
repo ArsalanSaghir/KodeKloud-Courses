@@ -1,0 +1,41 @@
+GIT Introduction
+
+git init                            # Make a new Directory
+git init --bare                     # Make a new empty directory
+git add                             # Add a file to the working area
+git clone                           # Clone a repository
+git status                          # Check the status of the branch you are in
+git log <Branch/Optional>           # Check the status of a specific branch in your repo
+echo notes.txt > .gitignore         # Command to ignore a specific file in repository 
+git branch -a                       # Show all the branches in a repo including remote branches
+git show --oneline                  # Show last commit changes made 
+git diff                            # Shows difference in the commited and available change
+git commit -m <Message for commit>  # Commit to the local repository
+git push                            # Push the commit to remote repository
+git push origin <branch name>       # Push the remote repo to local repo
+
+git fetch origin master             # Pull a repo from remote to local
+git pull origin master              # Pull a repo from remote to local
+
+git merge                           # Merge 2 branches of the repo
+
+git fork                            # Make independent copy of master 
+git branch                          # Make parallel dependent version of master
+
+git rebase master                   # Get changes from master branch and adding the commits from master remote branch
+
+git rebase -i HEAD~4                # Rebase only four commits
+
+git cherry-pick <commit hash>       # get a specific commit from the master branch to current branch
+						
+git revert <commit hash>            # Add commit with revert to mentioned flag
+git reset --soft HEAD~1             # Still have changes from last commit present in untracked status  
+git reset --hard HEAD~1	            # Deletes the changes while going back to the mentioned commit	
+
+git stash		            # Save the current working file in stash to have a clean working area
+git stash pop                       # Revert the modifications to working area
+git stash list                      # List the stashes
+git stash show <stash name>
+git stash pop <Stash name>	
+
+git reflog                          # All the information from history including the deleted/rebase/reset logs
