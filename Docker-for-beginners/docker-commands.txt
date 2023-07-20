@@ -1,0 +1,62 @@
+Docker for Beginners
+
+docker run centos                ## Locally look for the centos and then get the docker image from online docker repo
+docker run -it centos bash       ## Inside Centos Bash
+docker ps                        ## List running container
+docker ps -a                     ## List all the containers new/old 
+docker stop <container name>     ## Kills the Container
+docker rm <container>            ## Removes from the Disk
+docker rmi <container images>    ## Removes container images 
+docker pull <Container>          ## Downloads the image to device
+docker exec <container id> <command> 
+                                 ## Executes the command inside the container
+docker image list ls             ## Lists the images in the docker
+docker run <container>:<tag>     ## Tag for container-Version
+docker run -i <Container name>   ## interactive STDIN
+docker run -p <host port>:<Container port> <Container name>
+                                 ## Port mapping
+docker run -v <outside Directory>:<Inside Directory> <Container>
+                                 ## Map Volume to inside container
+docker inspect <Container Name>  ## Information on container with JSON 
+docker logs <container name>     ## Logs for container
+docker run -d  <Container name>  ## Running Container in Detach mode 
+docker attach <Container name>   ## Attaching back to container
+docker build <Docker file> -t  <Tag name>
+                                 ##  Build a new Docker Container
+docker push <new container>      ## Push it to public repo
+
+                                 ##CMD vs ENTRYPOINT 
+				 ## CMD is the full command that will be run once the container is run
+				 ## ENTRYPOINT is the command that will get appended once the container is run								 
+docker -e <environment variable> <Container name>
+docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=db_pass123  mysql
+docker-compose up
+docker run  --link <target Container image>:<target container name> <Target container>
+                                 ## Link containers together
+docker-compose build 
+docker -H=<Remote docker engine>
+docker run --cpus=.5 <container > ## limit docker CPU to 50%
+
+docker run --memory=100m <container > 
+                                 ## Limit docker RAM
+docker volume create <Folder name>
+docker run -v data_volume:/var/lib/mysql <container name>
+  				 ## Map new volume in the container 
+				 ## ^Volume Mounting^## 
+docker tun -v /data/mysql:/var/lib/mysql
+				 ## ^Bind Mounting^## 
+docker run ubuntu --network=host
+docker network create --driver bridge --subnet 182.2.0.0/24 <custom-isolated-network>
+docker network ls 
+docker inspect <container name>  ## See network information 
+
+docker run --name=mysql-db -e MYSQL_ROOT_PASSWORD=db_pass123  --network=wp-mysql-network  mysql:5.6 
+
+docker run --network=wp-mysql-network -e DB_HOST=mysql-db -e DB_Password=db_pass123 -p 38080:8080 --name=webapp --link mysql-db:mysql-db -d kodekloud/simple-webapp-mysql
+docker run --name=my-registry -p 5000:5000  registry:2 --restart
+docker pull httpd:latest
+docker image tag httpd:latest localhost:5000/nginx:latest
+docker push localhost:5000/httpd:latest
+docker image prune -a
+docker pull localhost:5000/httpd
+docker service create --replicas=100 redis 
