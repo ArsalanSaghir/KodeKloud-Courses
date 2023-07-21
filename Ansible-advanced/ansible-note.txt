@@ -1,0 +1,1462 @@
+Ansible Advanced Course
+ansible-playbook ans.yml --check
+ansible-playbook ans.yml --start-at-task "Start httpd service"
+ansible-playbook ans.yml --tags "install"
+
+-----------------------------------------------------
+CORE COMPONENTS
+-----------------------------------------------------
+--------------------------------------
+Task6
+--------------------------------------
+---
+
+- name: Create an empty file
+  hosts: web1
+  become: true
+  tasks:
+    - name: create the empty file
+      file:
+        path: /root/myfile.txt
+        state: touch
+--------------------------------------
+Task9
+--------------------------------------
+---
+
+- name: Create a user 
+  hosts: web1
+  become: true
+  tasks:
+    - name: create a new user
+      user:
+        name: angel
+        state: present
+        
+-----------------------------------------------------
+FACTS - information on the clients 
+-----------------------------------------------------
+--in playbook 
+gather_facts: no
+--ansible.cfg
+"gathering"   --Can be shut off from the configuration file also
+--------------------------------------
+Task 4
+--------------------------------------
+- name: gather facts
+  hosts: localhost
+  tasks:
+  - debug:
+    var: ansible_facts
+    
+ ansible -m setup localhost 
+--------------------------------------
+Task 5
+--------------------------------------
+- name: gather facts
+  hosts: web1
+  tasks:
+    - debug:
+      var: ansible_facts
+
+ansible -i inventory   -m setup web1 
+--------------------------------------
+Task 6
+--------------------------------------
+---
+- hosts: db1
+  tasks:
+    - name: Get server architecture
+      debug:
+        var: ansible_facts.architecture
+#-- Change the ansible.cfg value of gathering
+# to implicit
+--------------------------------------
+Task 7
+--------------------------------------
+---
+- hosts: web1
+  tasks:
+    - name: Get server architecture
+      debug:
+        var: ansible_facts
+
+- hosts: localhost
+  tasks:        
+    - name: copy to a file 
+      template: 
+        src: '{{ ansible_facts }}'
+        dest: /home/thor/playbooks/web/web-facts.txt
+        
+---------------------------
+ansible -i inventory -m setup web1\
+ > /home/thor/playbooks/web/web-facts.txt 
+
+
+-----------------------------------------------------
+ANSIBLE CONFIGURATION FILES
+-----------------------------------------------------
+ansible-config list # lists all configurations 
+ansible-config view # shows the current config file
+ansible-config dump # shows the current settings
+-----------
+Task 5
+-----------
+cd playbooks/
+ansible --version # look at the config file 
+cat /path/to/ansible.cfg
+"timeout= *"  # value under SSH timeout
+-----------
+Task 6
+-----------
+cp /etc/ansible/ansible.cfg /home/thor/playbooks
+-----------
+Task 7
+-----------
+ vi ansible.cfg
+ inventory      = ~/playbooks/inventory # uncommnet and change
+ 
+ -----------
+Task 8
+-----------
+ vi ansible.cfg
+ remote_port    = 2222  # uncommnet and change
+ 
+-----------
+Task 9
+-----------
+vi ansible.cfg
+timeout = 30 # uncommnet and change
+
+-----------
+Task 10
+-----------
+vi ansible.cfg
+deprecation_warnings = False # uncommnet and change
+
+-----------
+Task 11
+-----------
+vi ansible.cfg
+gathering = explicit   # uncommnet and change
+
+-----------------------------------------------------
+INSTALL
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+sudo yum install -y epel-release
+sudo yum install -y ansible
+
+-----------
+Task 2
+-----------
+ansible --version
+
+-----------
+Task 3
+-----------
+cp /etc/ansible/ansible.cfg /home/thor/playbooks/
+sudo vi /etc/ansible/ansible.cfg
+log_path = /var/log/ansible/ansible.log   #uncommnet and modify
+
+-----------------------------------------------------
+DISTRIBUTE SSH KEYS
+-----------------------------------------------------
+ssh-keygen # 2 keys formed Privte key: id_rsa Public_key=id_rsa.Public_key
+
+# Public_key to be sent to host where user is trying to connect
+cat ~/.ssh/authorized_keys
+#- ssh-copy-id -i id_rsa user1@server1
+# Access the remote host with Public_key in
+ssh -i id_rsa user1@server1
+
+#Add Private_key to ansible inventory file
+web1 ansible_host= <IP> ansible_ssh_private_key_file=/some/path
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+ssh
+-----------
+Task 2
+-----------
+ssh-keygen
+
+-----------
+Task 3
+-----------
+~/.ssh/authorized_keys
+
+-----------
+Task 4
+-----------
+Add ansible's public key to managed host's authorized_keys
+-----------
+Task 5
+-----------
+ssh-keygen -f ~/.ssh/ansible
+
+-----------
+Task 6
+-----------
+cd /home/thor/.ssh
+ssh-copy-id -i ansible ansible@web1
+
+-----------
+Task 7
+-----------
+vi /home/thor/playbooks/inventory
+web1 ansible_host=172.20.1.100 ansible_user=ansible ansible_ssh_private_key_file=/home/thor/.ssh/ansible
+
+-----------------------------------------------------
+ADHOC COMMANDS
+-----------------------------------------------------
+ansible -m <module> <hosts>
+
+-----------
+Task 1
+-----------
+ansible --version > /tmp/ansible_version.txt
+-----------
+Task 2
+-----------
+ansible -m setup localhost > /tmp/ansible_facts.txt
+-----------
+Task 3
+-----------
+ansible -m ping localhost > /tmp/ansible_ping.txt
+-----------
+Task 4
+-----------
+ansible -m ping -i /home/thor/playbooks/inventory all > /tmp/ansible_all.txt
+-----------
+Task 5
+-----------
+ansible -m command -a "date" -i /home/thor/playbooks/inventory web1 > /tmp/ansible_date.txt
+
+-----------------------------------------------------
+SHELL SCRIPTS
+-----------------------------------------------------
+vi shell-scripts.sh
+export ANSIBLE_GATHERING=explicit
+ansible -m ping all
+ansible -a 'cat /etc/hosts' all
+ansible-playbook play.yml
+:wq
+
+sh shell-scripts.sh
+OR
+chmod 755 shell-scripts.sh
+./shell-scripts.sh
+-----------
+Task 1
+-----------
+vi host_details.sh
+
+ansible -a 'hostname' -i /home/thor/playbooks/inventory all
+ansible -m copy -a 'src=/etc/hosts dest=/tmp/resolv.conf' -i /home/thor/playbooks/inventory node00
+chmod 755 host_details.sh 
+
+-----------
+Task 2
+-----------
+touch host_data.sh;chmod 755 host_data.sh; vi host_data.sh
+
+export ANSIBLE_GATHERING=False
+
+ansible -a 'uptime' -i inventory all
+ansible-playbook playbook.yml -i inventory -vv
+
+:wq
+
+vi playbook.yml
+
+---
+- hosts: all
+  tasks:
+    - name: Print /etc/redhat-release
+      command: 'cat /etc/redhat-release'
+-----------------------------------------------------
+PRIVILEGE ESCALATIONS
+-----------------------------------------------------
+become_user=nginx --ask-become-pass
+
+-----------
+Task 1
+-----------
+False
+-----------
+Task 2
+-----------
+root
+-----------
+Task 3
+-----------
+ansible_become
+-----------
+Task 4
+-----------
+--ask-become-pass
+-----------
+Task 5
+-----------
+become_flags
+-----------
+Task 6
+-----------
+---
+- hosts: all
+  gather_facts: no
+  become: yes 
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch
+        
+ansible-playbook -i inventory file.yml
+
+-----------
+Task 7
+-----------
+vi file.yml
+
+---
+- hosts: all
+  gather_facts: no
+  become: yes 
+  become_user: admin
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch        
+ansible-playbook -i inventory file.yml
+-----------
+Task 8
+-----------
+cd /home/thor/playbooks/web2/
+
+$ vi file.yml 
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  become_user: admin
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch
+        
+$ vi web2.sh 
+#!/bin/bash
+ansible-playbook -i inventory file.yml  --ask-become-pass
+$ cat inventory 
+[web]
+web2
+
+[web:vars]
+ansible_host=172.20.1.101
+ansible_user=ansible
+ansible_become_user=admin
+ansible_ssh_pipelining=true
+
+-----------
+Task 9
+-----------
+sudo vi /etc/ansible/ansible.cfg
+[privilege_escalation]
+become=True
+
+-----------
+Task 10
+-----------
+sudo vi /etc/ansible/ansible.cfg
+[privilege_escalation]
+become=True
+become_method=doas
+
+
+-----------------------------------------------------
+YAML SYNTAX AND ERRORS
+-----------------------------------------------------
+
+
+-----------
+Task 1
+-----------
+cd /home/thor/playbooks/lamp-stack-playbooks/
+vi inventory
+
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john 
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+
+
+-----------
+Task 2
+-----------
+
+cd /home/thor/playbooks/lamp-stack-playbooks/
+vi inventory
+
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+
+
+
+-----------
+Task 3
+-----------
+ssh-keygen -f .ssh/maria
+ssh-keygen -f .ssh/john
+ssh-copy-id -i john john@lamp-web
+ssh-copy-id -i maria maria@lamp-db
+-----------
+Task 4
+-----------
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git ansible_ssh_private_key_file=/home/thor/.ssh/john
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword ansible_ssh_private_key_file=/home/thor/.ssh/maria
+
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+-----------
+Task 5
+-----------
+- name: Deploy lamp stack application
+  hosts: all
+  become: true
+  tasks:
+    - name: Install common dependencies
+      yum:
+        name:
+          - libselinux-python
+          - libsemanage-python
+          - firewalld
+        state: installed
+
+
+-----------------------------------------------------
+ANSIBLE MODULES- Package
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+cd ~/playbooks/
+vi httpd.yml
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks: 
+  - yum: 
+      name: httpd
+      state: latest
+      
+-----------
+Task 2
+-----------
+- name: Install wget Package
+  hosts: web1
+  tasks: 
+    - name: install wget package task 
+      yum:
+        name: http://mirror.centos.org/centos/7/os/x86_64/Packages/wget-1.14-18.el7_6.1.x86_64.rpm
+        state: latest
+      
+-----------
+Task 3
+-----------
+- name: Install unzip Package
+  hosts: web1
+  tasks: 
+  - yum: 
+      name: unzip-5.52
+      state: latest
+-----------
+Task 4
+-----------
+---
+- hosts: all
+  tasks:
+    - name: Install iotop package
+      yum:
+        name: iotop
+        state: present
+-----------
+Task 5
+-----------
+- hosts: web1
+  tasks:
+  - yum: name=sudo state=latest
+  - yum: name=vsftpd-2.2.2 state=present allow_downgrade=true
+-----------
+
+-----------------------------------------------------
+ANSIBLE MODULES- Services
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+cd ~/playbooks/
+vi httpd.yml
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks: 
+  - service: 
+      name: httpd
+      state: started
+-----------
+Task 2
+-----------
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Copy Apache welcome file
+      copy:
+        src: index.html
+        dest: /var/www/html/index.html
+    - name: Reload the service httpd
+      service:
+        name: httpd
+        state: reloaded
+        
+-----------
+Task 3
+-----------
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks:
+  - service:
+      name: httpd
+      state: started
+      enabled: true
+-----------
+Task 4
+-----------
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Make changes in Apache config
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "^Listen 80"
+        replace: "Listen 443"
+    - name: Restart httpd service 
+      service:
+        name: httpd
+        state: restarted
+
+-----------
+Task 5
+-----------
+- name: Install nginx Package
+  hosts: web1
+  tasks:
+  - yum: name=nginx state=present
+  - service:
+      name: nginx
+      state: started
+      enabled: true
+
+-----------------------------------------------------
+ANSIBLE MODULES- Firewall
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+- name: Install firewalld Package
+  hosts: web1
+  tasks:
+  - yum: name=firewalld state=present
+  - service:
+      name: firewalld
+      state: started
+      enabled: true
+-----------
+Task 2
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld: 
+        source: 172.20.1.101
+        zone: internal
+        state: enabled
+-----------
+Task 3
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld:     
+        port: 161/udp
+        permanent: true
+        state: enabled
+        immediate: yes
+        zone: block
+
+-----------
+Task 4
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld: 
+        source: 172.20.1.2
+        zone: internal
+        protocol: https
+        permanent: true        
+        immediate: yes
+        state: enabled
+    - service:
+        name: firewalld
+        state: reloaded
+-----------
+Task 5
+-----------
+vi inventory
+web2 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+vi web2-config.yml
+---
+- hosts: web2
+  tasks:
+    - name: install httpd service
+      yum: 
+        name: httpd 
+        state: present 
+
+    - name: enable httpd service
+      service:
+        name: httpd
+        state: started
+        enabled: true
+        
+    - name: install firewalld service
+      yum: 
+        name: firewalld 
+        state: present 
+        enabled: true      
+        
+    - name: enable firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: true      
+        
+    - name: Change Apache port
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "Listen 80"
+        replace: "Listen 8082"
+        
+    - name: change firewall port to allow traffic
+      firewalld:
+        zone: public
+        port: 8082
+        state: enabled
+        permanent: true
+
+    - name: Restart Apache service
+      service:
+        name: httpd
+        state: restarted
+        enabled: true
+
+
+
+-----------
+Task 1
+-----------
+
+-----------
+Task 2
+-----------
+
+-----------
+Task 3
+-----------
+
+-----------
+Task 4
+-----------
+
+-----------
+Task 5
+-----------
+
+-----------
+Task 6
+-----------
+
+-----------
+Task 7
+-----------
+
+-----------
+Task 8
+-----------
+
+-----------
+Task 9
+-----------
+
+-----------
+Task 10
+-----------
+Ansible Advanced Course
+ansible-playbook ans.yml --check
+ansible-playbook ans.yml --start-at-task "Start httpd service"
+ansible-playbook ans.yml --tags "install"
+
+-----------------------------------------------------
+CORE COMPONENTS
+-----------------------------------------------------
+--------------------------------------
+Task6
+--------------------------------------
+---
+
+- name: Create an empty file
+  hosts: web1
+  become: true
+  tasks:
+    - name: create the empty file
+      file:
+        path: /root/myfile.txt
+        state: touch
+--------------------------------------
+Task9
+--------------------------------------
+---
+
+- name: Create a user 
+  hosts: web1
+  become: true
+  tasks:
+    - name: create a new user
+      user:
+        name: angel
+        state: present
+        
+-----------------------------------------------------
+FACTS - information on the clients 
+-----------------------------------------------------
+--in playbook 
+gather_facts: no
+--ansible.cfg
+"gathering"   --Can be shut off from the configuration file also
+--------------------------------------
+Task 4
+--------------------------------------
+- name: gather facts
+  hosts: localhost
+  tasks:
+  - debug:
+    var: ansible_facts
+    
+ ansible -m setup localhost 
+--------------------------------------
+Task 5
+--------------------------------------
+- name: gather facts
+  hosts: web1
+  tasks:
+    - debug:
+      var: ansible_facts
+
+ansible -i inventory   -m setup web1 
+--------------------------------------
+Task 6
+--------------------------------------
+---
+- hosts: db1
+  tasks:
+    - name: Get server architecture
+      debug:
+        var: ansible_facts.architecture
+#-- Change the ansible.cfg value of gathering
+# to implicit
+--------------------------------------
+Task 7
+--------------------------------------
+---
+- hosts: web1
+  tasks:
+    - name: Get server architecture
+      debug:
+        var: ansible_facts
+
+- hosts: localhost
+  tasks:        
+    - name: copy to a file 
+      template: 
+        src: '{{ ansible_facts }}'
+        dest: /home/thor/playbooks/web/web-facts.txt
+        
+---------------------------
+ansible -i inventory -m setup web1\
+ > /home/thor/playbooks/web/web-facts.txt 
+
+
+-----------------------------------------------------
+ANSIBLE CONFIGURATION FILES
+-----------------------------------------------------
+ansible-config list # lists all configurations 
+ansible-config view # shows the current config file
+ansible-config dump # shows the current settings
+-----------
+Task 5
+-----------
+cd playbooks/
+ansible --version # look at the config file 
+cat /path/to/ansible.cfg
+"timeout= *"  # value under SSH timeout
+-----------
+Task 6
+-----------
+cp /etc/ansible/ansible.cfg /home/thor/playbooks
+-----------
+Task 7
+-----------
+ vi ansible.cfg
+ inventory      = ~/playbooks/inventory # uncommnet and change
+ 
+ -----------
+Task 8
+-----------
+ vi ansible.cfg
+ remote_port    = 2222  # uncommnet and change
+ 
+-----------
+Task 9
+-----------
+vi ansible.cfg
+timeout = 30 # uncommnet and change
+
+-----------
+Task 10
+-----------
+vi ansible.cfg
+deprecation_warnings = False # uncommnet and change
+
+-----------
+Task 11
+-----------
+vi ansible.cfg
+gathering = explicit   # uncommnet and change
+
+-----------------------------------------------------
+INSTALL
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+sudo yum install -y epel-release
+sudo yum install -y ansible
+
+-----------
+Task 2
+-----------
+ansible --version
+
+-----------
+Task 3
+-----------
+cp /etc/ansible/ansible.cfg /home/thor/playbooks/
+sudo vi /etc/ansible/ansible.cfg
+log_path = /var/log/ansible/ansible.log   #uncommnet and modify
+
+-----------------------------------------------------
+DISTRIBUTE SSH KEYS
+-----------------------------------------------------
+ssh-keygen # 2 keys formed Privte key: id_rsa Public_key=id_rsa.Public_key
+
+# Public_key to be sent to host where user is trying to connect
+cat ~/.ssh/authorized_keys
+#- ssh-copy-id -i id_rsa user1@server1
+# Access the remote host with Public_key in
+ssh -i id_rsa user1@server1
+
+#Add Private_key to ansible inventory file
+web1 ansible_host= <IP> ansible_ssh_private_key_file=/some/path
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+ssh
+-----------
+Task 2
+-----------
+ssh-keygen
+
+-----------
+Task 3
+-----------
+~/.ssh/authorized_keys
+
+-----------
+Task 4
+-----------
+Add ansible's public key to managed host's authorized_keys
+-----------
+Task 5
+-----------
+ssh-keygen -f ~/.ssh/ansible
+
+-----------
+Task 6
+-----------
+cd /home/thor/.ssh
+ssh-copy-id -i ansible ansible@web1
+
+-----------
+Task 7
+-----------
+vi /home/thor/playbooks/inventory
+web1 ansible_host=172.20.1.100 ansible_user=ansible ansible_ssh_private_key_file=/home/thor/.ssh/ansible
+
+-----------------------------------------------------
+ADHOC COMMANDS
+-----------------------------------------------------
+ansible -m <module> <hosts>
+
+-----------
+Task 1
+-----------
+ansible --version > /tmp/ansible_version.txt
+-----------
+Task 2
+-----------
+ansible -m setup localhost > /tmp/ansible_facts.txt
+-----------
+Task 3
+-----------
+ansible -m ping localhost > /tmp/ansible_ping.txt
+-----------
+Task 4
+-----------
+ansible -m ping -i /home/thor/playbooks/inventory all > /tmp/ansible_all.txt
+-----------
+Task 5
+-----------
+ansible -m command -a "date" -i /home/thor/playbooks/inventory web1 > /tmp/ansible_date.txt
+
+-----------------------------------------------------
+SHELL SCRIPTS
+-----------------------------------------------------
+vi shell-scripts.sh
+export ANSIBLE_GATHERING=explicit
+ansible -m ping all
+ansible -a 'cat /etc/hosts' all
+ansible-playbook play.yml
+:wq
+
+sh shell-scripts.sh
+OR
+chmod 755 shell-scripts.sh
+./shell-scripts.sh
+-----------
+Task 1
+-----------
+vi host_details.sh
+
+ansible -a 'hostname' -i /home/thor/playbooks/inventory all
+ansible -m copy -a 'src=/etc/hosts dest=/tmp/resolv.conf' -i /home/thor/playbooks/inventory node00
+chmod 755 host_details.sh 
+
+-----------
+Task 2
+-----------
+touch host_data.sh;chmod 755 host_data.sh; vi host_data.sh
+
+export ANSIBLE_GATHERING=False
+
+ansible -a 'uptime' -i inventory all
+ansible-playbook playbook.yml -i inventory -vv
+
+:wq
+
+vi playbook.yml
+
+---
+- hosts: all
+  tasks:
+    - name: Print /etc/redhat-release
+      command: 'cat /etc/redhat-release'
+-----------------------------------------------------
+PRIVILEGE ESCALATIONS
+-----------------------------------------------------
+become_user=nginx --ask-become-pass
+
+-----------
+Task 1
+-----------
+False
+-----------
+Task 2
+-----------
+root
+-----------
+Task 3
+-----------
+ansible_become
+-----------
+Task 4
+-----------
+--ask-become-pass
+-----------
+Task 5
+-----------
+become_flags
+-----------
+Task 6
+-----------
+---
+- hosts: all
+  gather_facts: no
+  become: yes 
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch
+        
+ansible-playbook -i inventory file.yml
+
+-----------
+Task 7
+-----------
+vi file.yml
+
+---
+- hosts: all
+  gather_facts: no
+  become: yes 
+  become_user: admin
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch        
+ansible-playbook -i inventory file.yml
+-----------
+Task 8
+-----------
+cd /home/thor/playbooks/web2/
+
+$ vi file.yml 
+---
+- hosts: all
+  gather_facts: no
+  become: true
+  become_user: admin
+  tasks:
+    - name: Create a blank file
+      file:
+        path: /home/admin/test.txt
+        state: touch
+        
+$ vi web2.sh 
+#!/bin/bash
+ansible-playbook -i inventory file.yml  --ask-become-pass
+$ cat inventory 
+[web]
+web2
+
+[web:vars]
+ansible_host=172.20.1.101
+ansible_user=ansible
+ansible_become_user=admin
+ansible_ssh_pipelining=true
+
+-----------
+Task 9
+-----------
+sudo vi /etc/ansible/ansible.cfg
+[privilege_escalation]
+become=True
+
+-----------
+Task 10
+-----------
+sudo vi /etc/ansible/ansible.cfg
+[privilege_escalation]
+become=True
+become_method=doas
+
+
+-----------------------------------------------------
+YAML SYNTAX AND ERRORS
+-----------------------------------------------------
+
+
+-----------
+Task 1
+-----------
+cd /home/thor/playbooks/lamp-stack-playbooks/
+vi inventory
+
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john 
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+
+
+-----------
+Task 2
+-----------
+
+cd /home/thor/playbooks/lamp-stack-playbooks/
+vi inventory
+
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+
+
+
+-----------
+Task 3
+-----------
+ssh-keygen -f .ssh/maria
+ssh-keygen -f .ssh/john
+ssh-copy-id -i john john@lamp-web
+ssh-copy-id -i maria maria@lamp-db
+-----------
+Task 4
+-----------
+# Inventory File
+lamp-web  ansible_host=172.20.1.100 ansible_user=john  ansible_password=john httpd_port=80 repository=https://github.com/kodekloudhub/learning-app-ecommerce.git ansible_ssh_private_key_file=/home/thor/.ssh/john
+lamp-db   ansible_host=172.20.1.101 ansible_user=maria ansible_password=maria mysqlservice=mysqld mysql_port=3306 dbname=ecomdb dbuser=ecomuser dbpassword=ecompassword ansible_ssh_private_key_file=/home/thor/.ssh/maria
+
+
+[db_servers]
+lamp-db
+
+[web_servers]
+lamp-web
+-----------
+Task 5
+-----------
+- name: Deploy lamp stack application
+  hosts: all
+  become: true
+  tasks:
+    - name: Install common dependencies
+      yum:
+        name:
+          - libselinux-python
+          - libsemanage-python
+          - firewalld
+        state: installed
+
+
+-----------------------------------------------------
+ANSIBLE MODULES- Package
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+cd ~/playbooks/
+vi httpd.yml
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks: 
+  - yum: 
+      name: httpd
+      state: latest
+      
+-----------
+Task 2
+-----------
+- name: Install wget Package
+  hosts: web1
+  tasks: 
+    - name: install wget package task 
+      yum:
+        name: http://mirror.centos.org/centos/7/os/x86_64/Packages/wget-1.14-18.el7_6.1.x86_64.rpm
+        state: latest
+      
+-----------
+Task 3
+-----------
+- name: Install unzip Package
+  hosts: web1
+  tasks: 
+  - yum: 
+      name: unzip-5.52
+      state: latest
+-----------
+Task 4
+-----------
+---
+- hosts: all
+  tasks:
+    - name: Install iotop package
+      yum:
+        name: iotop
+        state: present
+-----------
+Task 5
+-----------
+- hosts: web1
+  tasks:
+  - yum: name=sudo state=latest
+  - yum: name=vsftpd-2.2.2 state=present allow_downgrade=true
+-----------
+
+-----------------------------------------------------
+ANSIBLE MODULES- Services
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+cd ~/playbooks/
+vi httpd.yml
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks: 
+  - service: 
+      name: httpd
+      state: started
+-----------
+Task 2
+-----------
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Copy Apache welcome file
+      copy:
+        src: index.html
+        dest: /var/www/html/index.html
+    - name: Reload the service httpd
+      service:
+        name: httpd
+        state: reloaded
+        
+-----------
+Task 3
+-----------
+---
+- name: Install httpd Package
+  hosts: web1
+  tasks:
+  - service:
+      name: httpd
+      state: started
+      enabled: true
+-----------
+Task 4
+-----------
+---
+- hosts: all
+  gather_facts: no
+  tasks:
+    - name: Make changes in Apache config
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "^Listen 80"
+        replace: "Listen 443"
+    - name: Restart httpd service 
+      service:
+        name: httpd
+        state: restarted
+
+-----------
+Task 5
+-----------
+- name: Install nginx Package
+  hosts: web1
+  tasks:
+  - yum: name=nginx state=present
+  - service:
+      name: nginx
+      state: started
+      enabled: true
+
+-----------------------------------------------------
+ANSIBLE MODULES- Firewall
+-----------------------------------------------------
+-----------
+Task 1
+-----------
+- name: Install firewalld Package
+  hosts: web1
+  tasks:
+  - yum: name=firewalld state=present
+  - service:
+      name: firewalld
+      state: started
+      enabled: true
+-----------
+Task 2
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld: 
+        source: 172.20.1.101
+        zone: internal
+        state: enabled
+-----------
+Task 3
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld:     
+        port: 161/udp
+        permanent: true
+        state: enabled
+        immediate: yes
+        zone: block
+
+-----------
+Task 4
+-----------
+- hosts: web1
+  tasks:
+    - name: firewall modification
+      firewalld: 
+        source: 172.20.1.2
+        zone: internal
+        protocol: https
+        permanent: true        
+        immediate: yes
+        state: enabled
+    - service:
+        name: firewalld
+        state: reloaded
+-----------
+Task 5
+-----------
+vi inventory
+web2 ansible_host=172.20.1.101 ansible_ssh_pass=Passw0rd ansible_user=root
+
+vi web2-config.yml
+---
+- hosts: web2
+  tasks:
+    - name: install httpd service
+      yum: 
+        name: httpd 
+        state: present 
+
+    - name: enable httpd service
+      service:
+        name: httpd
+        state: started
+        enabled: true
+        
+    - name: install firewalld service
+      yum: 
+        name: firewalld 
+        state: present 
+        enabled: true      
+        
+    - name: enable firewalld service
+      service:
+        name: firewalld
+        state: started
+        enabled: true      
+        
+    - name: Change Apache port
+      replace:
+        path: /etc/httpd/conf/httpd.conf
+        regexp: "Listen 80"
+        replace: "Listen 8082"
+        
+    - name: change firewall port to allow traffic
+      firewalld:
+        zone: public
+        port: 8082
+        state: enabled
+        permanent: true
+
+    - name: Restart Apache service
+      service:
+        name: httpd
+        state: restarted
+        enabled: true
+
+
+
+-----------
+Task 1
+-----------
+
+-----------
+Task 2
+-----------
+
+-----------
+Task 3
+-----------
+
+-----------
+Task 4
+-----------
+
+-----------
+Task 5
+-----------
+
+-----------
+Task 6
+-----------
+
+-----------
+Task 7
+-----------
+
+-----------
+Task 8
+-----------
+
+-----------
+Task 9
+-----------
+
+-----------
+Task 10
+-----------
